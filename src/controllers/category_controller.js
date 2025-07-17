@@ -48,7 +48,11 @@ exports.createCategory = asyncHandler(async (req, res) => {
 
 // Get all departments
 exports.getAllCategories = asyncHandler(async (req, res) => {
-    const categories = await Category.findAll();
+    const categories = await Category.findAll({
+        where: {
+            companyId: req.user.companyId
+        }
+    });
     res.json({
         success: true,
         count: categories.length,

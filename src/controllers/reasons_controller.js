@@ -49,7 +49,11 @@ exports.createReasons = asyncHandler(async (req, res) => {
 
 // Get all departments
 exports.getAllReasons = asyncHandler(async (req, res) => {
-    const reasons = await Reasons.findAll();
+    const reasons = await Reasons.findAll({
+        where: {
+            companyId: req.user.companyId
+        }
+    });
     res.json({
         success: true,
         count: reasons.length,

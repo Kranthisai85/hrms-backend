@@ -48,7 +48,11 @@ exports.createGrade = asyncHandler(async (req, res) => {
 
 // Get all departments
 exports.getAllGrades = asyncHandler(async (req, res) => {
-    const grades = await Grade.findAll();
+    const grades = await Grade.findAll({
+        where: {
+            companyId: req.user.companyId
+        }
+    });
     res.json({
         success: true,
         count: grades.length,

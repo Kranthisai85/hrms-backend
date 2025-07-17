@@ -25,7 +25,11 @@ exports.getDesignation = async (req, res) => {
 
 exports.getAllDesignations = async (req, res) => {
   try {
-    const designations = await Designation.findAll();
+    const designations = await Designation.findAll({
+      where: {
+        companyId: req.user.companyId
+      }
+    });
     res.status(200).json({ success: true, data: designations });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch designations', error });

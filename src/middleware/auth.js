@@ -57,17 +57,23 @@ exports.protect = async (req, res, next) => {
 exports.authorize = (...roles) => {
   return (req, res, next) => {
     console.log('\nAuthorize Middleware:');
-    console.log('User role:', req.user.role);
+    console.log('User role:', req.user);
     console.log('Required roles:', roles);
-    
+
+    if (req.user.role === 'super_admin') {
+      console.log('super_admin access granted');
+      return next();
+    }
+    console.log('req.user.role', req.user.role);
+    console.log('roles', roles);
     if (!roles.includes(req.user.role)) {
       console.log('Role not authorized');
       return res.status(403).json({
         success: false,
-        message: `User role ${req.user.role} is not authorized to access this route`
+        message: `User role ${req.user.role} is not authorized to access this route`,
       });
     }
-    
+
     console.log('Role authorized');
     next();
   };

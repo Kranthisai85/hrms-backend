@@ -50,7 +50,11 @@ exports.createDepartment = asyncHandler(async (req, res) => {
 
 // Get all departments
 exports.getDepartments = asyncHandler(async (req, res) => {
-  const departments = await Department.findAll();
+  const departments = await Department.findAll({
+    where: {
+      companyId: req.user.companyId
+    }
+  });
   res.json({
     success: true,
     count: departments.length,

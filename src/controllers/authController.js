@@ -80,7 +80,8 @@ exports.login = async (req, res) => {
     const token = jwt.sign(
       {
         id: user.id,
-        role: user.role
+        role: user.role,
+        companyId: user.companyId
       },
       process.env.JWT_SECRET || 'your-super-secret-jwt-key-for-pacehrm',
       // { expiresIn: '1d' }
@@ -95,13 +96,14 @@ exports.login = async (req, res) => {
     res.json({
       success: true,
       token,
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role
-      }
+      user
+      // user: {
+      //   id: user.id,
+      //   firstName: user.firstName,
+      //   lastName: user.lastName,
+      //   email: user.email,
+      //   role: user.role
+      // }
     });
   } catch (error) {
     console.error('Login error:', {

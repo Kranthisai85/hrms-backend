@@ -3,8 +3,13 @@ module.exports = (sequelize, DataTypes) => {
         id: {
             type: DataTypes.INTEGER,
             primaryKey: true,
-            autoIncrement: true,
+            autoIncrement: true,    
         },
+        companyId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            field: 'company_id',
+          },
         type: {
             type: DataTypes.ENUM('resignation', 'termination', 'other'),
             allowNull: false,

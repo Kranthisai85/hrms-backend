@@ -144,7 +144,7 @@ module.exports = async (sequelize) => {
         },
         {
             timestamps: true,
-            tableName: 'Employees',
+            tableName: 'employees',
             underscored: true,
         }
     );

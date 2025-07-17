@@ -5,6 +5,11 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true,
             autoIncrement: true,
         },
+        companyId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            field: 'company_id',
+          },
         name: {
             type: DataTypes.STRING,
             allowNull: false,

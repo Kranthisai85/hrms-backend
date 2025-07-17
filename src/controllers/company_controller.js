@@ -20,7 +20,7 @@ global.db = {
 // Get single department
 exports.getOneCompany = asyncHandler(async (req, res) => {
     const company = await Company.findOne({
-        where: { id: 8 }
+        where: { id: req.params.id }
     });
 
     if (!company) {
@@ -32,7 +32,7 @@ exports.getOneCompany = asyncHandler(async (req, res) => {
 
     res.json({
         success: true,
-        data: company
+        company: company
     });
 });
 

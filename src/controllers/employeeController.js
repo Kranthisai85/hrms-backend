@@ -135,6 +135,9 @@ exports.getEmployees = async (req, res) => {
     }
 
     const employees = await Employee.findAll({
+      where: {
+        companyId: req.user.companyId
+      },
       include: [{
         model: User,
         as: 'user',

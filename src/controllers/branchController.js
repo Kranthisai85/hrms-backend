@@ -20,6 +20,7 @@ console.log('Formatted current time: ', formattedTime);
 
 // Import the Branch model and pass DataTypes
 const Branch = require('../models/Branch')(sequelize, DataTypes);
+// const Company = require('../models/Company')(sequelize, DataTypes);
 
 // Set up global.db for shared access
 global.db = {
@@ -72,12 +73,21 @@ exports.createBranch = asyncHandler(async (req, res) => {
 // @route   GET /api/branches
 // @access  Private/Admin
 exports.getBranches = asyncHandler(async (req, res) => {
-  const branches = await Branch.findAll();
-  res.json({
-    success: true,
-    count: branches.length,
-    data: branches
-  });
+  try {
+    const branches = await Branch.findAll({
+      where: {
+        companyId: req.user.companyId
+      }
+    });
+    res.json({
+      success: true,
+      count: branches.length,
+      data: branches
+    });
+  } catch (error) {
+    console.error("Sequelize FindAll Error:", error); // Log full error object
+    res.status(500).json({ message: "Internal Server Error", error });
+  }
 });
 
 // @desc    Get single branch
@@ -85,7 +95,6 @@ exports.getBranches = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 exports.getBranch = asyncHandler(async (req, res) => {
   const branch = await Branch.findByPk(req.params.id);
-
   if (!branch) {
     return res.status(404).json({
       success: false,

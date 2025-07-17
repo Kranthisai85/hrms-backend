@@ -31,7 +31,7 @@ module.exports = async (sequelize) => {
       },
       password: {
         type: DataTypes.STRING,
-        allowNull: true, // Changed to allow null
+        allowNull: true,
       },
       role: {
         type: DataTypes.STRING(20),
@@ -44,11 +44,11 @@ module.exports = async (sequelize) => {
       dateOfBirth: {
         type: DataTypes.DATEONLY,
         field: 'date_of_birth',
-        allowNull: true, // Moved from Employee
+        allowNull: true,
       },
       gender: {
         type: DataTypes.ENUM('Male', 'Female', 'Other'),
-        allowNull: true, // Moved from Employee
+        allowNull: true,
       },
       phone: {
         type: DataTypes.STRING,
@@ -67,10 +67,35 @@ module.exports = async (sequelize) => {
           isIn: [['Active', 'Inactive', 'Suspended']],
         },
       },
+  
+      // ✅ Add company_id as a foreign key
+      companyId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        field: 'company_id',
+        references: {
+          model: 'companies', // table name
+          key: 'id',
+        },
+      },
+  
+      // ✅ Add created_at and updated_at
+      createdAt: {
+        type: DataTypes.DATE,
+        field: 'created_at',
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        field: 'updated_at',
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       timestamps: true,
-      tableName: 'Users',
+      tableName: 'users',
       underscored: true,
       hooks: {
         beforeCreate: async (user) => {
