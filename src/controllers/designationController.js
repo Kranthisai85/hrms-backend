@@ -1,61 +1,51 @@
-const { Sequelize, DataTypes } = require('sequelize'); // 1. Import first
-
-// 2. Initialize Sequelize instance
+const { Sequelize, DataTypes } = require('sequelize');
 const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {
   host: process.env.DB_HOST,
   dialect: process.env.DB_DIALECT,
-  logging: console.log,
+  logging: false,
 });
-
-// 3. Import the model after sequelize and DataTypes are ready
 const Designation = require('../models/Designation')(sequelize, DataTypes);
 
 exports.getDesignation = async (req, res) => {
-  const { id } = req.params;
   try {
+    const { id } = req.params;
     const designation = await Designation.findByPk(id);
     if (!designation) {
       return res.status(404).json({ success: false, message: 'Designation not found' });
     }
     res.status(200).json({ success: true, data: designation });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch designation', error });
+    res.status(500).json({ success: false, message: error.message || 'Failed to fetch designation' });
   }
 };
 
 exports.getAllDesignations = async (req, res) => {
   try {
-    const designations = await Designation.findAll({
-      where: {
-        companyId: req.user.companyId
-      }
-    });
+    const designations = await Designation.findAll({ where: { companyId: req.user.companyId } });
     res.status(200).json({ success: true, data: designations });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch designations', error });
+    res.status(500).json({ success: false, message: error.message || 'Failed to fetch designations' });
   }
 };
 
 exports.createDesignation = async (req, res) => {
-  const { name, departmentId} = req.body;
-    const companyId = process.env.DEFAULT_COMPANY_ID || 1; // Default company ID
-
-  console.log('Request body:', req.body);
-  console.log('Creating designation with:', { name, departmentId, companyId });
   try {
+    const { name, departmentId } = req.body;
+    const companyId = req.user.companyId;
+    if (!name || !departmentId || !companyId) {
+      return res.status(400).json({ success: false, message: 'Name, departmentId, and companyId are required' });
+    }
     const designation = await Designation.create({ name, departmentId, companyId });
-    console.log('Designation created successfully:', designation);
     res.status(201).json({ success: true, data: designation });
   } catch (error) {
-    console.error('Error creating designation:', error);
-    res.status(500).json({ success: false, message: 'Failed to create designation', error });
+    res.status(500).json({ success: false, message: error.message || 'Failed to create designation' });
   }
 };
 
 exports.updateDesignation = async (req, res) => {
-  const { id } = req.params;
-  const { name, departmentId } = req.body;
   try {
+    const { id } = req.params;
+    const { name, departmentId } = req.body;
     const designation = await Designation.findByPk(id);
     if (!designation) {
       return res.status(404).json({ success: false, message: 'Designation not found' });
@@ -63,13 +53,13 @@ exports.updateDesignation = async (req, res) => {
     await designation.update({ name, departmentId });
     res.status(200).json({ success: true, data: designation });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update designation', error });
+    res.status(500).json({ success: false, message: error.message || 'Failed to update designation' });
   }
 };
 
 exports.deleteDesignation = async (req, res) => {
-  const { id } = req.params;
   try {
+    const { id } = req.params;
     const designation = await Designation.findByPk(id);
     if (!designation) {
       return res.status(404).json({ success: false, message: 'Designation not found' });
@@ -77,6 +67,6 @@ exports.deleteDesignation = async (req, res) => {
     await designation.destroy();
     res.status(200).json({ success: true, message: 'Designation deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to delete designation', error });
+    res.status(500).json({ success: false, message: error.message || 'Failed to delete designation' });
   }
 };

@@ -1,151 +1,90 @@
 const asyncHandler = require('express-async-handler');
-const { Sequelize, DataTypes } = require('sequelize'); // Import DataTypes
-require('dotenv').config(); // Load environment variables from .env file
+const { Sequelize, DataTypes } = require('sequelize');
+require('dotenv').config();
 
-// Initialize Sequelize using environment variables
 const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {
   host: process.env.DB_HOST,
-  dialect: process.env.DB_DIALECT, // Dynamically set the dialect (e.g., 'mysql')
-  logging: console.log, // Use console.log as the logging function
+  dialect: process.env.DB_DIALECT,
+  logging: false,
 });
 const formatDate = (date) => {
-  return date.toISOString().slice(0, 19).replace('T', ' '); // Format: 'YYYY-MM-DD HH:mm:ss'
+  return date.toISOString().slice(0, 19).replace('T', ' ');
 };
 
-const currentTime = new Date();
-const formattedTime = formatDate(currentTime);  // Convert to MySQL compatible format
-
-console.log('Formatted current time: ', formattedTime);
-
-
-// Import the Branch model and pass DataTypes
 const Branch = require('../models/Branch')(sequelize, DataTypes);
-// const Company = require('../models/Company')(sequelize, DataTypes);
-
-// Set up global.db for shared access
 global.db = {
   sequelize,
   Sequelize,
   Branch,
 };
 
-// Get Branch model from global db object
-// @desc    Create a new branch
-// @route   POST /api/branches
-// @access  Private/Admin
-exports.createBranch = asyncHandler(async (req, res) => {
-  const { name, companyId, address } = req.body;
-
-  // Basic validation
-  if (!name || !companyId) {
-    return res.status(400).json({ 
-      success: false,
-      message: 'Name and companyId are required'
+exports.createBranch = async (req, res) => {
+  try {
+    const { name, address } = req.body;
+    const companyId = req.user.companyId;
+    if (!name || !companyId) {
+      return res.status(400).json({ success: false, message: 'Name and companyId are required' });
+    }
+    const defaultAddress = address || 'No Address Provided';
+    const formattedTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const branch = await Branch.create({
+      name,
+      companyId,
+      address: defaultAddress,
+      createdAt: formattedTime,
+      updatedAt: formattedTime,
     });
+    res.status(201).json({ success: true, data: branch });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message || 'Error creating branch' });
   }
+};
 
-  const defaultAddress = address || 'No Address Provided'; // Default address if not provided
-  const formattedTime = new Date().toISOString().slice(0, 19).replace('T', ' '); // Format: 'YYYY-MM-DD HH:mm:ss'
-
-  console.log('Creating branch with:', {
-    name,
-    companyId,
-    address: defaultAddress,
-    createdAt: formattedTime,
-    updatedAt: formattedTime,
-  });
-
-  const branch = await Branch.create({
-    name,
-    companyId, // Use the correct column name
-    address: defaultAddress,
-    createdAt: formattedTime,
-    updatedAt: formattedTime,
-  });
-
-  res.status(201).json({
-    success: true,
-    data: branch,
-  });
-});
-
-// @desc    Get all branches
-// @route   GET /api/branches
-// @access  Private/Admin
-exports.getBranches = asyncHandler(async (req, res) => {
+exports.getBranches = async (req, res) => {
   try {
     const branches = await Branch.findAll({
-      where: {
-        companyId: req.user.companyId
-      }
+      where: { companyId: req.user.companyId }
     });
-    res.json({
-      success: true,
-      count: branches.length,
-      data: branches
-    });
+    res.json({ success: true, count: branches.length, data: branches });
   } catch (error) {
-    console.error("Sequelize FindAll Error:", error); // Log full error object
-    res.status(500).json({ message: "Internal Server Error", error });
+    res.status(500).json({ success: false, message: error.message || 'Error retrieving branches' });
   }
-});
+};
 
-// @desc    Get single branch
-// @route   GET /api/branches/:id
-// @access  Private/Admin
-exports.getBranch = asyncHandler(async (req, res) => {
-  const branch = await Branch.findByPk(req.params.id);
-  if (!branch) {
-    return res.status(404).json({
-      success: false,
-      message: 'Branch not found'
-    });
+exports.getBranch = async (req, res) => {
+  try {
+    const branch = await Branch.findByPk(req.params.id);
+    if (!branch) {
+      return res.status(404).json({ success: false, message: 'Branch not found' });
+    }
+    res.json({ success: true, data: branch });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message || 'Error retrieving branch' });
   }
+};
 
-  res.json({
-    success: true,
-    data: branch
-  });
-});
-
-// @desc    Update branch
-// @route   PUT /api/branches/:id
-// @access  Private/Admin
-exports.updateBranch = asyncHandler(async (req, res) => {
-  const branch = await Branch.findByPk(req.params.id);
-
-  if (!branch) {
-    return res.status(404).json({
-      success: false,
-      message: 'Branch not found'
-    });
+exports.updateBranch = async (req, res) => {
+  try {
+    const branch = await Branch.findByPk(req.params.id);
+    if (!branch) {
+      return res.status(404).json({ success: false, message: 'Branch not found' });
+    }
+    const updatedBranch = await branch.update(req.body);
+    res.json({ success: true, data: updatedBranch });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message || 'Error updating branch' });
   }
+};
 
-  const updatedBranch = await branch.update(req.body);
-  
-  res.json({
-    success: true,
-    data: updatedBranch
-  });
-});
-
-// @desc    Delete branch
-// @route   DELETE /api/branches/:id
-// @access  Private/Admin
-exports.deleteBranch = asyncHandler(async (req, res) => {
-  const branch = await Branch.findByPk(req.params.id);
-
-  if (!branch) {
-    return res.status(404).json({
-      success: false,
-      message: 'Branch not found'
-    });
+exports.deleteBranch = async (req, res) => {
+  try {
+    const branch = await Branch.findByPk(req.params.id);
+    if (!branch) {
+      return res.status(404).json({ success: false, message: 'Branch not found' });
+    }
+    await branch.destroy();
+    res.json({ success: true, data: {} });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message || 'Error deleting branch' });
   }
-
-  await branch.destroy();
-  
-  res.json({
-    success: true,
-    data: {}
-  });
-});
+};

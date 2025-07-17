@@ -34,27 +34,22 @@ exports.createEmployee = async (req, res) => {
       pan: panNumber,
     } = req.body;
 
-    // Get models and sequelize from global.db
     const { User, Employee, sequelize } = global.db;
     if (!User || !Employee || !sequelize) {
-      throw new Error('Models not initialized');
+      return res.status(500).json({ success: false, message: 'Models not initialized' });
     }
 
-    // Input validation
     if (!officialEmail || !branchId || !designationId || !departmentId || !joiningDate || !employmentType || !panNumber || !aadharNumber) {
-      throw new Error('Missing required fields: email, branchId, designationId, departmentId, joiningDate, employmentType, panNumber, or aadharNumber');
+      return res.status(400).json({ success: false, message: 'Missing required fields: email, branchId, designationId, departmentId, joiningDate, employmentType, panNumber, or aadharNumber' });
     }
 
-    // Start transaction
     const result = await sequelize.transaction(async (t) => {
-      // Create user
-
       const user = await User.create(
         {
-          name, // Use 'name' from req.body as firstName
-          last_name: null, // 'last_name' not in req.body, set to null
+          name,
+          last_name: null,
           email: personalEmail,
-          password: null, // No password provided
+          password: null,
           role: 'employee',
           status: 'Active',
           phone,
@@ -65,9 +60,7 @@ exports.createEmployee = async (req, res) => {
         { transaction: t }
       );
 
-      // Use provided empCode or generate one
       const employeeId = empCode || `EMP${String(user.id).padStart(5, '0')}`;
-      // Create employee
       const employee = await Employee.create(
         {
           userId: user.id,
@@ -94,7 +87,6 @@ exports.createEmployee = async (req, res) => {
         { transaction: t }
       );
 
-      // Fetch employee with user details
       const employeeWithUser = await Employee.findOne({
         where: { id: employee.id },
         include: [
@@ -115,11 +107,9 @@ exports.createEmployee = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error('Create employee error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error creating employee',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      message: error.message || 'Error creating employee',
     });
   }
 };
@@ -131,7 +121,7 @@ exports.getEmployees = async (req, res) => {
   try {
     const { Employee, User } = global.db;
     if (!Employee || !User) {
-      throw new Error('Models not initialized');
+      return res.status(500).json({ success: false, message: 'Models not initialized' });
     }
 
     const employees = await Employee.findAll({
@@ -150,10 +140,9 @@ exports.getEmployees = async (req, res) => {
       data: employees
     });
   } catch (error) {
-    console.error('Get employees error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error retrieving employees'
+      message: error.message || 'Error retrieving employees'
     });
   }
 };
@@ -165,7 +154,7 @@ exports.getEmployee = async (req, res) => {
   try {
     const { Employee, User } = global.db;
     if (!Employee || !User) {
-      throw new Error('Models not initialized');
+      return res.status(500).json({ success: false, message: 'Models not initialized' });
     }
 
     const employee = await Employee.findByPk(req.params.id, {
@@ -188,10 +177,9 @@ exports.getEmployee = async (req, res) => {
       data: employee
     });
   } catch (error) {
-    console.error('Get employee error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error retrieving employee'
+      message: error.message || 'Error retrieving employee'
     });
   }
 };
