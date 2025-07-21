@@ -28,7 +28,7 @@ router.put('/tax-declaration/:id', authorize('admin', 'super_admin'), updateTaxD
 // Bulk operations routes
 router.post('/declarations/bulk-import', authorize('admin', 'super_admin'), bulkImportDeclarations);
 router.get('/declarations/export', authorize('admin', 'super_admin'), exportDeclarations);
-router.put('/declarations/bulk-approve', authorize('admin', 'super_admin'), bulkApproveDeclarations);
-router.get('/declarations/template', authorize('admin', 'super_admin'), downloadTemplate);
+// router.put('/declarations/bulk-approve', authorize('admin', 'super_admin'), bulkApproveDeclarations);
+// router.get('/declarations/template', authorize('admin', 'super_admin'), downloadTemplate);
 
 module.exports = router;

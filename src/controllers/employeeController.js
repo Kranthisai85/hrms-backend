@@ -39,8 +39,9 @@ exports.createEmployee = async (req, res) => {
       return res.status(500).json({ success: false, message: 'Models not initialized' });
     }
 
-    if (!officialEmail || !branchId || !designationId || !departmentId || !joiningDate || !employmentType || !panNumber || !aadharNumber) {
-      return res.status(400).json({ success: false, message: 'Missing required fields: email, branchId, designationId, departmentId, joiningDate, employmentType, panNumber, or aadharNumber' });
+    const companyId = req.user.companyId;
+    if (!officialEmail || !branchId || !designationId || !departmentId || !joiningDate || !employmentType || !panNumber || !aadharNumber || !companyId) {
+      return res.status(400).json({ success: false, message: 'Missing required fields: email, branchId, designationId, departmentId, joiningDate, employmentType, panNumber, aadharNumber, or companyId' });
     }
 
     const result = await sequelize.transaction(async (t) => {
@@ -55,7 +56,8 @@ exports.createEmployee = async (req, res) => {
           phone,
           dateOfBirth,
           gender,
-          bloodGroup
+          bloodGroup,
+          companyId: companyId
         },
         { transaction: t }
       );
@@ -93,7 +95,8 @@ exports.createEmployee = async (req, res) => {
           {
             model: User,
             as: 'user',
-            attributes: ['id', 'name', 'last_name', 'email', 'role', 'status', 'phone', 'dateOfBirth', 'gender', 'blood_group'],
+            attributes: ['id', 'name', 'last_name', 'email', 'role', 'status', 'phone', 'dateOfBirth', 'gender', 'blood_group', 'companyId'],
+            where: { companyId: req.user.companyId }
           },
         ],
         transaction: t,
@@ -125,13 +128,11 @@ exports.getEmployees = async (req, res) => {
     }
 
     const employees = await Employee.findAll({
-      where: {
-        companyId: req.user.companyId
-      },
       include: [{
         model: User,
         as: 'user',
-        attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'date_of_birth', 'gender', 'blood_group']
+        attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'date_of_birth', 'gender', 'blood_group', 'companyId'],
+        where: { companyId: req.user.companyId }
       }]
     });
 
@@ -316,6 +317,7 @@ exports.importEmployees = async (req, res) => {
       throw new Error('Models not initialized');
     }
 
+    const companyId = req.user.companyId;
     const file = req.files.file;
     const workbook = XLSX.read(file.data);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -332,7 +334,8 @@ exports.importEmployees = async (req, res) => {
           email: row.email,
           password: await bcrypt.hash(row.password || 'defaultPassword123', 10),
           role: 'employee',
-          status: 'Active'
+          status: 'Active',
+          companyId: companyId
         }, { transaction: t });
 
         // Generate employee ID
@@ -351,7 +354,8 @@ exports.importEmployees = async (req, res) => {
           include: [{
             model: User,
             as: 'user',
-            attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'date_of_birth', 'gender', 'blood_group']
+            attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'date_of_birth', 'gender', 'blood_group', 'companyId'],
+            where: { companyId: req.user.companyId }
           }],
           transaction: t
         });
