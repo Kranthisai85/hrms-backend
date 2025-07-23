@@ -71,6 +71,14 @@ const initializeModels = async (sequelize) => {
   console.log('Initializing Category model...');
   const Category = await require('./models/Category')(sequelize, DataTypes);
 
+  const Address = require('./Address')(sequelize, DataTypes);
+const FamilyMember = require('./FamilyMember')(sequelize, DataTypes);
+const Qualification = require('./Qualification')(sequelize, DataTypes);
+const Experience = require('./Experience')(sequelize, DataTypes);
+const Document = require('./Document')(sequelize, DataTypes);
+
+// ...add associations if needed
+
   // Create models object
   const models = {
     sequelize,
@@ -138,25 +146,24 @@ const startServer = async () => {
     });
 
     // Sync database
-    console.log('Syncing database...');
-    await sequelize.sync();
-    console.log('Database synced successfully');
+    try {
+      await sequelize.sync({ alter: true });
+      console.log('✓ Database synced');
+    } catch (err) {
+      console.error('Database sync failed:', err.message);
+      process.exit(1);
+    }
 
     // Start server with port fallback
     const tryPort = (port) => {
       app.listen(port)
         .on('listening', () => {
-          console.log(`Server is running on port ${port}`);
-          console.log(`Health check: http://localhost:${port}/api/health`);
-          console.log('\nAPI Routes:');
-          console.log('POST /api/auth/login - Login');
-          console.log('GET  /api/auth/me    - Get current user');
-          console.log('POST /api/employees  - Create employee');
-          console.log('GET  /api/employees  - Get all employees');
+          console.log(`Server running: http://localhost:${port}`);
+          console.log(`Health: http://localhost:${port}/api/health`);
         })
         .on('error', (err) => {
           if (err.code === 'EADDRINUSE') {
-            console.log(`Port ${port} is busy, trying ${port + 1}`);
+            console.log(`Port ${port} in use, trying ${port + 1}`);
             tryPort(port + 1);
           } else {
             console.error('Server error:', err);

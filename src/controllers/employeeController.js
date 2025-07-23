@@ -190,7 +190,7 @@ exports.getEmployee = async (req, res) => {
 // @access  Private/Admin
 exports.updateEmployee = async (req, res) => {
   try {
-    const { Employee, User, sequelize } = global.db;
+    const { Employee, User, Address, FamilyMember, Qualification, Experience, Document, sequelize } = global.db;
     if (!Employee || !User || !sequelize) {
       throw new Error('Models not initialized');
     }
@@ -224,16 +224,60 @@ exports.updateEmployee = async (req, res) => {
         'country', 'pinCode', 'departmentId', 'designationId', 'branchId',
         'employmentType', 'workSchedule', 'basicSalary', 'bankName',
         'accountNumber', 'ifscCode', 'panNumber', 'aadharNumber',
-        'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation'
+        'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation',
+        // Add new fields as needed (isOrphan, lessThanPrimary, isFresher, photo, etc.)
+        'isOrphan', 'lessThanPrimary', 'isFresher', 'photo',
+        'emergencyContactName', 'emergencyContactNumber', 'emergencyContactRelationship'
       ];
-
       employeeFields.forEach(field => {
         if (req.body[field] !== undefined) {
           updateData[field] = req.body[field];
         }
       });
-
       await employee.update(updateData, { transaction: t });
+
+      // --- Address Section ---
+      const addressFields = [
+        'address', 'city', 'state', 'country', 'pincode',
+        'permanentAddress', 'permanentCity', 'permanentState', 'permanentCountry', 'permanentPincode'
+      ];
+      const addressUpdate = {};
+      addressFields.forEach(f => { if (req.body[f] !== undefined) addressUpdate[f] = req.body[f]; });
+      if (Object.keys(addressUpdate).length && Address) {
+        await Address.upsert({ user_id: employee.userId, ...addressUpdate }, { transaction: t });
+      }
+
+      // --- Family Members Section ---
+      if (Array.isArray(req.body.familyMembers) && FamilyMember) {
+        await FamilyMember.destroy({ where: { employee_id: employee.id }, transaction: t });
+        for (const member of req.body.familyMembers) {
+          await FamilyMember.create({ employee_id: employee.id, ...member }, { transaction: t });
+        }
+      }
+
+      // --- Qualifications Section ---
+      if (Array.isArray(req.body.qualifications) && Qualification) {
+        await Qualification.destroy({ where: { employee_id: employee.id }, transaction: t });
+        for (const qual of req.body.qualifications) {
+          await Qualification.create({ employee_id: employee.id, ...qual }, { transaction: t });
+        }
+      }
+
+      // --- Experiences Section ---
+      if (Array.isArray(req.body.experiences) && Experience) {
+        await Experience.destroy({ where: { employee_id: employee.id }, transaction: t });
+        for (const exp of req.body.experiences) {
+          await Experience.create({ employee_id: employee.id, ...exp }, { transaction: t });
+        }
+      }
+
+      // --- Documents Section ---
+      if (Array.isArray(req.body.documents) && Document) {
+        await Document.destroy({ where: { employee_id: employee.id }, transaction: t });
+        for (const doc of req.body.documents) {
+          await Document.create({ employee_id: employee.id, ...doc }, { transaction: t });
+        }
+      }
 
       // Get updated employee with user details
       return await Employee.findByPk(employee.id, {
