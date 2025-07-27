@@ -11,7 +11,7 @@ module.exports = async (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Employees',
+        model: 'employees',
         key: 'id'
       }
     },
@@ -101,7 +101,7 @@ module.exports = async (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id'
       }
     },
@@ -109,7 +109,7 @@ module.exports = async (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id'
       }
     },

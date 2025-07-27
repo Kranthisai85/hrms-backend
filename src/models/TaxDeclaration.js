@@ -12,7 +12,7 @@ module.exports = async (sequelize) => {
       allowNull: false,
       field: 'employee_id',
       references: {
-        model: 'Employees',
+        model: 'employees',
         key: 'id'
       }
     },
@@ -78,7 +78,7 @@ module.exports = async (sequelize) => {
       allowNull: true,
       field: 'reviewed_by',
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id'
       }
     },

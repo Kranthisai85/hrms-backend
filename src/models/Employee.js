@@ -61,7 +61,7 @@ module.exports = async (sequelize) => {
                 field: 'joining_date',
             },
             employmentStatus: {
-                type: DataTypes.ENUM('Active', 'Inactive', 'On Leave', 'Terminated', 'Probation', 'Confirmed'),
+                type: DataTypes.ENUM('Active', 'Inactive', 'On Leave', 'Terminated', 'Probation', 'Confirmed', 'Resigned', 'Relieved'),
                 allowNull: false,
                 defaultValue: 'Probation',
                 field: 'employment_status',

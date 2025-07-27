@@ -71,11 +71,16 @@ const initializeModels = async (sequelize) => {
   console.log('Initializing Category model...');
   const Category = await require('./models/Category')(sequelize, DataTypes);
 
-  const Address = require('./Address')(sequelize, DataTypes);
-const FamilyMember = require('./FamilyMember')(sequelize, DataTypes);
-const Qualification = require('./Qualification')(sequelize, DataTypes);
-const Experience = require('./Experience')(sequelize, DataTypes);
-const Document = require('./Document')(sequelize, DataTypes);
+  console.log('Initializing Address model...');
+  const Address = await require('./models/Address')(sequelize, DataTypes);
+
+  console.log('Initializing FamilyMember model...');
+  const FamilyMember = await require('./models/FamilyMember')(sequelize, DataTypes);
+
+  console.log('Initializing Qualification model...');
+  const Qualification = await require('./models/Qualification')(sequelize, DataTypes);
+
+  console.log('Initializing Experience model...');
 
 // ...add associations if needed
 

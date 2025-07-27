@@ -12,7 +12,7 @@ module.exports = async (sequelize) => {
       allowNull: false,
       field: 'employee_id',  // Explicitly define the column name
       references: {
-        model: 'Employees',
+        model: 'employees',
         key: 'id'
       }
     },
@@ -52,7 +52,7 @@ module.exports = async (sequelize) => {
       allowNull: true,
       field: 'locked_by',
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id'
       }
     },
