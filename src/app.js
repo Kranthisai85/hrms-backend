@@ -152,7 +152,7 @@ const startServer = async () => {
 
     // Sync database
     try {
-      await sequelize.sync({ alter: true });
+      await sequelize.sync();
       console.log('✓ Database synced');
     } catch (err) {
       console.error('Database sync failed:', err.message);
