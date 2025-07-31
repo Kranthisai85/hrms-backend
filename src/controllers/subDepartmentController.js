@@ -14,15 +14,15 @@ global.db.SubDepartment = SubDepartment;
 
 const createSubDepartment = async (req, res) => {
   try {
-    const { name, department_id, description } = req.body;
-    if (!name || !department_id) {
+    const { name, departmentId, description } = req.body;
+    if (!name || !departmentId) {
       return res.status(400).json({ success: false, message: 'Name and department_id are required' });
     }
     const defaultDescription = description || 'No Description Provided';
     const formattedTime = formatDate(new Date());
     const subDepartment = await global.db.SubDepartment.create({
       name,
-      departmentId: department_id,
+      departmentId: departmentId,
       description: defaultDescription,
       created_at: formattedTime,
       updated_at: formattedTime,
@@ -77,8 +77,8 @@ const getSubDepartment = async (req, res) => {
 
 const updateSubDepartment = async (req, res) => {
   try {
-    const { name, department_id, description } = req.body;
-    if (!name || !department_id) {
+    const { name, departmentId, description } = req.body;
+    if (!name || !departmentId) {
       return res.status(400).json({ success: false, message: 'Name and department_id are required' });
     }
     const subDepartment = await SubDepartment.findByPk(req.params.id);
@@ -87,7 +87,7 @@ const updateSubDepartment = async (req, res) => {
     }
     const updatedSubDepartment = await subDepartment.update({
       name,
-      departmentId: department_id,
+      departmentId: departmentId,
       description,
     });
     res.json({ success: true, data: updatedSubDepartment });

@@ -4,9 +4,8 @@ const { protect, authorize } = require('../middleware/auth');
 const {
     createGrade,
     getAllGrades,
-    // getDepartment,
-    // updateDepartment,
-    // deleteDepartment
+    updateGrade,
+    deleteGrade
 } = require('../controllers/grade_controller');
 
 // Apply authentication middleware to all routes
@@ -17,9 +16,8 @@ router.route('/')
     .post(authorize('admin'), createGrade)
     .get(authorize('admin'), getAllGrades);
 
-// router.route('/:id')
-//     .get(authorize('admin'), getDepartment)
-//     .put(authorize('admin'), updateDepartment)
-//     .delete(authorize('admin'), deleteDepartment);
+router.route('/:id')
+    .put(authorize('admin'), updateGrade)
+    .delete(authorize('admin'), deleteGrade);
 
 module.exports = router;

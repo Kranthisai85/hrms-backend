@@ -4,9 +4,8 @@ const { protect, authorize } = require('../middleware/auth');
 const {
     createCategory,
     getAllCategories,
-    // getDepartment,
-    // updateDepartment,
-    // deleteDepartment
+    updateCategory,
+    deleteCategory
 } = require('../controllers/category_controller');
 
 // Apply authentication middleware to all routes
@@ -17,9 +16,8 @@ router.route('/')
     .post(authorize('admin'), createCategory)
     .get(authorize('admin'), getAllCategories);
 
-// router.route('/:id')
-//     .get(authorize('admin'), getDepartment)
-//     .put(authorize('admin'), updateDepartment)
-//     .delete(authorize('admin'), deleteDepartment);
+router.route('/:id')
+    .put(authorize('admin'), updateCategory)
+    .delete(authorize('admin'), deleteCategory);
 
 module.exports = router;

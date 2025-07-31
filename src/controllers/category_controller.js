@@ -50,3 +50,61 @@ exports.getAllCategories = async (req, res) => {
         res.status(500).json({ success: false, message: error.message || 'Error retrieving categories' });
     }
 };
+
+exports.updateCategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name } = req.body;
+        const companyId = req.user.companyId;
+
+        if (!name) {
+            return res.status(400).json({ success: false, message: 'Name is required' });
+        }
+
+        const category = await Category.findOne({ 
+            where: { 
+                id: id,
+                companyId: companyId 
+            } 
+        });
+
+        if (!category) {
+            return res.status(404).json({ success: false, message: 'Category not found' });
+        }
+
+        const formattedTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        
+        await category.update({
+            name,
+            updatedAt: formattedTime,
+        });
+
+        res.json({ success: true, data: category });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message || 'Error updating category' });
+    }
+};
+
+exports.deleteCategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const companyId = req.user.companyId;
+
+        const category = await Category.findOne({ 
+            where: { 
+                id: id,
+                companyId: companyId 
+            } 
+        });
+
+        if (!category) {
+            return res.status(404).json({ success: false, message: 'Category not found' });
+        }
+
+        await category.destroy();
+
+        res.json({ success: true, message: 'Category deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message || 'Error deleting category' });
+    }
+};

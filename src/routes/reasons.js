@@ -5,10 +5,8 @@ const {
     createReasons,
     getAllReasons,
     getAllTypeReasons,
-    // getAllResignationReasons
-    // getDepartment,
-    // updateDepartment,
-    // deleteDepartment
+    updateReason,
+    deleteReason
 } = require('../controllers/reasons_controller');
 
 // Apply authentication middleware to all routes
@@ -19,12 +17,10 @@ router.route('/')
     .post(authorize('admin'), createReasons)
     .get(authorize('admin'), getAllReasons);
 router.route('/:type')
-    .get(authorize('admin'), getAllTypeReasons)
-// .get(authorize('admin'), getAllResignationReasons);
+    .get(authorize('admin'), getAllTypeReasons);
 
-// router.route('/:id')
-//     .get(authorize('admin'), getDepartment)
-//     .put(authorize('admin'), updateDepartment)
-//     .delete(authorize('admin'), deleteDepartment);
+router.route('/:id')
+    .put(authorize('admin'), updateReason)
+    .delete(authorize('admin'), deleteReason);
 
 module.exports = router;

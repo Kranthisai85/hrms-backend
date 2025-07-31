@@ -47,3 +47,61 @@ exports.getAllGrades = async (req, res) => {
         res.status(500).json({ success: false, message: error.message || 'Error retrieving grades' });
     }
 };
+
+exports.updateGrade = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name } = req.body;
+        const companyId = req.user.companyId;
+
+        if (!name) {
+            return res.status(400).json({ success: false, message: 'Name is required' });
+        }
+
+        const grade = await Grade.findOne({ 
+            where: { 
+                id: id,
+                companyId: companyId 
+            } 
+        });
+
+        if (!grade) {
+            return res.status(404).json({ success: false, message: 'Grade not found' });
+        }
+
+        const formattedTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        
+        await grade.update({
+            name,
+            updatedAt: formattedTime,
+        });
+
+        res.json({ success: true, data: grade });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message || 'Error updating grade' });
+    }
+};
+
+exports.deleteGrade = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const companyId = req.user.companyId;
+
+        const grade = await Grade.findOne({ 
+            where: { 
+                id: id,
+                companyId: companyId 
+            } 
+        });
+
+        if (!grade) {
+            return res.status(404).json({ success: false, message: 'Grade not found' });
+        }
+
+        await grade.destroy();
+
+        res.json({ success: true, message: 'Grade deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message || 'Error deleting grade' });
+    }
+};
