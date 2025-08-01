@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const fileUpload = require('express-fileupload');
+const path = require('path');
 const initializeDatabase = require('./config/database');
 const { Sequelize, DataTypes } = require('sequelize'); // Import DataTypes
 
@@ -21,8 +22,22 @@ const reasonsRoutes = require('./routes/reasons');
 const app = express();
 
 // Middleware
+const allowedOriginPattern = /^https?:\/\/([a-z0-9-]+\.)*pacehrm\.com$/;
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://82.112.236.201', 'http://localhost:3001', 'https://pss.pacehrm.com']
+  origin: function (origin, callback) {
+    // Allow localhost for development
+    if (!origin || 
+        origin.startsWith('http://localhost:3000') || 
+        origin.startsWith('http://localhost:3001') || 
+        origin.startsWith('http://82.112.236.201') ||
+        allowedOriginPattern.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS: ' + origin));
+    }
+  },
+  credentials: true
 }));
 
 app.use(express.json());
@@ -97,7 +112,10 @@ const initializeModels = async (sequelize) => {
     Designation,
     SubDepartment,
     Grade,
-    Category
+    Category,
+    Address,
+    FamilyMember,
+    Qualification,
   };
 
   // Initialize associations
@@ -149,6 +167,10 @@ const startServer = async () => {
         error: process.env.NODE_ENV === 'development' ? err.message : undefined
       });
     });
+
+    // Serve uploaded files
+    app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
+    app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
     // Sync database
     try {
