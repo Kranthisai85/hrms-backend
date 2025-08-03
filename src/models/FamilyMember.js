@@ -3,6 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     const FamilyMember = sequelize.define('FamilyMember', {
       id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
       employee_id: { type: DataTypes.INTEGER, allowNull: false },
+      user_id: { type: DataTypes.INTEGER, allowNull: false },
       name: DataTypes.STRING,
       dateOfBirth: DataTypes.DATEONLY,
       relationship: DataTypes.STRING,
@@ -16,6 +17,7 @@ module.exports = (sequelize, DataTypes) => {
   
     FamilyMember.associate = (models) => {
       FamilyMember.belongsTo(models.Employee, { foreignKey: 'employee_id', as: 'employee' });
+      FamilyMember.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
     };
   
     return FamilyMember;

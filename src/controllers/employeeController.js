@@ -153,17 +153,74 @@ exports.getEmployees = async (req, res) => {
 // @access  Private/Admin
 exports.getEmployee = async (req, res) => {
   try {
-    const { Employee, User } = global.db;
+    const { 
+      Employee, 
+      User, 
+      Address, 
+      FamilyMember, 
+      Qualification, 
+      Experience, 
+      Document, 
+      Department, 
+      Designation, 
+      Branch, 
+      SubDepartment, 
+      Grade, 
+      Category,
+    } = global.db;
+    
     if (!Employee || !User) {
       return res.status(500).json({ success: false, message: 'Models not initialized' });
     }
 
     const employee = await Employee.findByPk(req.params.id, {
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'date_of_birth', 'gender', 'blood_group']
-      }]
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'date_of_birth', 'gender', 'blood_group', 'companyId']
+        },
+        {
+          model: Department,
+          as: 'department',
+          attributes: ['id', 'name', 'description']
+        },
+        {
+          model: Designation,
+          as: 'designation',
+          attributes: ['id', 'name']
+        },
+        {
+          model: Branch,
+          as: 'branch',
+          attributes: ['id', 'name', 'address']
+        },
+        {
+          model: SubDepartment,
+          as: 'subDepartment',
+          attributes: ['id', 'name', 'description']
+        },
+        {
+          model: Grade,
+          as: 'grade',
+          attributes: ['id', 'name']
+        },
+        {
+          model: Category,
+          as: 'category',
+          attributes: ['id', 'name']
+        },
+        {
+          model: Employee,
+          as: 'reportingManager',
+          attributes: ['id', 'employeeId', 'email'],
+          include: [{
+            model: User,
+            as: 'user',
+            attributes: ['id', 'name', 'lastName']
+          }]
+        },
+      ]
     });
 
     if (!employee) {
@@ -173,11 +230,63 @@ exports.getEmployee = async (req, res) => {
       });
     }
 
+    // Get address information
+    let address = null;
+    if (Address) {
+      address = await Address.findOne({
+        where: { user_id: employee.userId }
+      });
+    }
+
+    // Get family members
+    let familyMembers = [];
+    if (FamilyMember) {
+      familyMembers = await FamilyMember.findAll({
+        where: { employee_id: employee.userId }
+      });
+    }
+
+    // Get qualifications
+    let qualifications = [];
+    if (Qualification) {
+      qualifications = await Qualification.findAll({
+        where: { employee_id: employee.userId }
+      });
+    }
+
+    // Get experiences
+    let experiences = [];
+    if (Experience) {
+      experiences = await Experience.findAll({
+        where: { employee_id: employee.userId }
+      });
+    }
+
+    // Get documents
+    let documents = [];
+    if (Document) {
+      documents = await Document.findAll({
+        where: { employee_id: employee.userId }
+      });
+    }
+
+
+    // Combine all data
+    const employeeData = {
+      ...employee.toJSON(),
+      address,
+      familyMembers,
+      qualifications,
+      experiences,
+      documents,
+    };
+
     res.json({
       success: true,
-      data: employee
+      data: employeeData
     });
   } catch (error) {
+    console.error('Get employee error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Error retrieving employee'
@@ -227,7 +336,6 @@ exports.updateEmployee = async (req, res) => {
         'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation',
         // Add new fields as needed (isOrphan, lessThanPrimary, isFresher, photo, etc.)
         'isOrphan', 'lessThanPrimary', 'isFresher', 'photo',
-        'emergencyContactName', 'emergencyContactNumber', 'emergencyContactRelationship'
       ];
       employeeFields.forEach(field => {
         if (req.body[field] !== undefined) {
@@ -244,7 +352,16 @@ exports.updateEmployee = async (req, res) => {
       const addressUpdate = {};
       addressFields.forEach(f => { if (req.body[f] !== undefined) addressUpdate[f] = req.body[f]; });
       if (Object.keys(addressUpdate).length && Address) {
-        await Address.upsert({ user_id: employee.userId, ...addressUpdate }, { transaction: t });
+        const [address, created] = await Address.findOrCreate({
+          where: { user_id: employee.userId },
+          defaults: { user_id: employee.userId, ...addressUpdate },
+          transaction: t
+        });
+        
+        if (!created) {
+          // Update existing address
+          await address.update(addressUpdate, { transaction: t });
+        }
       }
 
       // --- Family Members Section ---

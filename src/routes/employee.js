@@ -54,7 +54,7 @@ router.post('/upload-photo', async (req, res) => {
     const fileName = `employee_${employeeId}_${Date.now()}${fileExtension}`;
     
     // Create uploads directory if it doesn't exist
-    const uploadDir = path.join(__dirname, 'uploads/employee-photos');
+    const uploadDir = path.join(__dirname, '../uploads/employee-photos');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -65,15 +65,25 @@ router.post('/upload-photo', async (req, res) => {
     
     // Update employee record with photo path
     const { Employee } = global.db;
-    await Employee.update(
+    const updateResult = await Employee.update(
       { photo: fileName },
       { where: { id: employeeId } }
     );
     
+    // Check if the update was successful
+    if (updateResult[0] === 0) {
+      // If no rows were updated, the employee might not exist
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found or photo update failed'
+      });
+    }
+    
+    // Only send success response if database update was successful
     res.json({
       success: true,
       photoPath: fileName,
-      message: 'Photo uploaded successfully'
+      message: 'Photo uploaded and updated successfully'
     });
     
   } catch (error) {

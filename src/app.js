@@ -96,6 +96,13 @@ const initializeModels = async (sequelize) => {
   const Qualification = await require('./models/Qualification')(sequelize, DataTypes);
 
   console.log('Initializing Experience model...');
+  const Experience = await require('./models/Experience')(sequelize, DataTypes);
+
+  console.log('Initializing Document model...');
+  const Document = await require('./models/Document')(sequelize, DataTypes);
+
+  console.log('Initializing Reasons model...');
+  const Reasons = await require('./models/Reasons')(sequelize, DataTypes);
 
 // ...add associations if needed
 
@@ -116,6 +123,8 @@ const initializeModels = async (sequelize) => {
     Address,
     FamilyMember,
     Qualification,
+    Experience,
+    Document,
   };
 
   // Initialize associations

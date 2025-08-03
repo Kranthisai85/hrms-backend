@@ -141,6 +141,11 @@ module.exports = async (sequelize) => {
                 type: DataTypes.INTEGER,
                 allowNull: true,
             },
+            photo: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                field: 'photo',
+            },
         },
         {
             timestamps: true,
