@@ -8,9 +8,9 @@ exports.createEmployee = async (req, res) => {
   try {
     const {
       empCode,
-      name, // Map 'name' to 'firstName' for User model
+      name, // Map 'name' to 'name' for User model
       gender,
-      dateOfBirth,
+      dateOfBirth, // Direct field from frontend
       branchId,
       designationId,
       departmentId,
@@ -21,7 +21,7 @@ exports.createEmployee = async (req, res) => {
       employmentType,
       employmentStatus,
       joiningDate,
-      phone, // Map to 'phone' for User model
+      phone, // Direct field from frontend
       personalEmail, // Not stored, using officialEmail as email
       officialEmail,
       inviteSent,
@@ -29,9 +29,11 @@ exports.createEmployee = async (req, res) => {
       resignationDate,
       relievedDate,
       reason,
-      bloodGroup,
+      bloodGroup, // Direct field from frontend
       aadharNumber,
       panNumber,
+      // Handle nested user data from frontend
+      user
     } = req.body;
 
     const { User, Employee, sequelize } = global.db;
@@ -41,32 +43,39 @@ exports.createEmployee = async (req, res) => {
 
     const companyId = req.user.companyId;
 
+    // Extract user data from nested structure or direct fields
+    const userName = name || user?.name;
+    const userGender = gender || user?.gender;
+    const userDateOfBirth = dateOfBirth || user?.date_of_birth || user?.dateOfBirth;
+    const userPhone = phone || user?.phone;
+    const userBloodGroup = bloodGroup || user?.blood_group;
+
     if (!officialEmail || !branchId || !designationId || !departmentId || !joiningDate || !employmentType || !panNumber || !aadharNumber || !companyId) {
       return res.status(400).json({ success: false, message: 'Missing required fields: officialEmail, branchId, designationId, departmentId, joiningDate, employmentType, panNumber, aadharNumber, or companyId' });
     }
 
     const result = await sequelize.transaction(async (t) => {
-      const user = await User.create(
+      const userRecord = await User.create(
         {
-          name,
+          name: userName,
           last_name: null,
           email: personalEmail,
           password: null,
           role: 'employee',
           status: 'Active',
-          phone,
-          dateOfBirth,
-          gender,
-          bloodGroup,
+          phone: userPhone,
+          dateOfBirth: userDateOfBirth,
+          gender: userGender,
+          bloodGroup: userBloodGroup,
           companyId: companyId
         },
         { transaction: t }
       );
 
-      const employeeId = empCode || `EMP${String(user.id).padStart(5, '0')}`;
+      const employeeId = empCode || `EMP${String(userRecord.id).padStart(5, '0')}`;
       const employee = await Employee.create(
         {
-          userId: user.id,
+          userId: userRecord.id,
           empCode: employeeId,
           departmentId: departmentId,
           designationId: designationId,
@@ -96,7 +105,7 @@ exports.createEmployee = async (req, res) => {
           {
             model: User,
             as: 'user',
-            attributes: ['id', 'name', 'last_name', 'email', 'role', 'status', 'phone', 'dateOfBirth', 'gender', 'blood_group', 'companyId'],
+            attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'dateOfBirth', 'gender', 'bloodGroup', 'companyId'],
             where: { companyId: req.user.companyId }
           },
         ],
@@ -132,7 +141,7 @@ exports.getEmployees = async (req, res) => {
       include: [{
         model: User,
         as: 'user',
-        attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'date_of_birth', 'gender', 'blood_group', 'companyId'],
+        attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'dateOfBirth', 'gender', 'bloodGroup', 'companyId'],
         where: { companyId: req.user.companyId }
       }]
     });
@@ -179,7 +188,7 @@ exports.getEmployee = async (req, res) => {
         {
           model: User,
           as: 'user',
-          attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'date_of_birth', 'gender', 'blood_group', 'companyId']
+          attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'dateOfBirth', 'gender', 'bloodGroup', 'companyId']
         },
         {
           model: Department,
@@ -319,30 +328,49 @@ exports.updateEmployee = async (req, res) => {
       }
 
       // Update user details if provided
-      if (req.body.firstName || req.body.lastName || req.body.email) {
-        await employee.user.update({
-          firstName: req.body.firstName || employee.user.firstName,
-          lastName: req.body.lastName || employee.user.lastName,
-          email: req.body.email || employee.user.email
-        }, { transaction: t });
+      const userUpdateData = {};
+      const userFields = ['name', 'phone', 'dateOfBirth', 'gender', 'bloodGroup'];
+      
+      // Handle nested user data from frontend
+      if (req.body.user) {
+        userFields.forEach(field => {
+          if (req.body.user[field] !== undefined) {
+            userUpdateData[field] = req.body.user[field];
+          }
+        });
+      } else {
+        // Handle direct fields
+        userFields.forEach(field => {
+          if (req.body[field] !== undefined) {
+            userUpdateData[field] = req.body[field];
+          }
+        });
+      }
+      
+      if (Object.keys(userUpdateData).length > 0) {
+        await employee.user.update(userUpdateData, { transaction: t });
       }
 
       // Update employee details
       const updateData = {};
       const employeeFields = [
-        'phoneNumber', 'dateOfBirth', 'gender', 'address', 'city', 'state',
-        'country', 'pinCode', 'departmentId', 'designationId', 'branchId',
-        'employmentType', 'workSchedule', 'basicSalary', 'bankName',
-        'accountNumber', 'ifscCode', 'panNumber', 'aadharNumber',
+        'empCode', 'departmentId', 'designationId', 'branchId', 'subDepartmentId',
+        'gradeId', 'categoryId', 'reportingManagerId', 'employmentType', 'employmentStatus',
+        'joiningDate', 'confirmationDate', 'resignationDate', 'relievedDate', 'reason',
+        'panNumber', 'aadharNumber', 'email', 'invite_sent', 'inviteSent',
+        // Additional fields
+        'phoneNumber', 'address', 'city', 'state', 'country', 'pinCode',
+        'workSchedule', 'basicSalary', 'bankName', 'accountNumber', 'ifscCode',
         'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation',
-        // Add new fields as needed (isOrphan, lessThanPrimary, isFresher, photo, etc.)
         'isOrphan', 'lessThanPrimary', 'isFresher', 'photo',
       ];
+      
       employeeFields.forEach(field => {
         if (req.body[field] !== undefined) {
           updateData[field] = req.body[field];
         }
       });
+      
       await employee.update(updateData, { transaction: t });
 
       // --- Address Section ---
@@ -402,7 +430,7 @@ exports.updateEmployee = async (req, res) => {
         include: [{
           model: User,
           as: 'user',
-          attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'date_of_birth', 'gender', 'blood_group']
+          attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'dateOfBirth', 'gender', 'bloodGroup']
         }],
         transaction: t
       });
@@ -516,7 +544,7 @@ exports.importEmployees = async (req, res) => {
           include: [{
             model: User,
             as: 'user',
-            attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'date_of_birth', 'gender', 'blood_group', 'companyId'],
+            attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'dateOfBirth', 'gender', 'bloodGroup', 'companyId'],
             where: { companyId: req.user.companyId }
           }],
           transaction: t
@@ -557,7 +585,7 @@ exports.exportEmployees = async (req, res) => {
       include: [{
         model: User,
         as: 'user',
-        attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'date_of_birth', 'gender', 'blood_group']
+        attributes: ['id', 'name', 'lastName', 'email', 'role', 'status', 'phone', 'dateOfBirth', 'gender', 'bloodGroup']
       }]
     });
 
