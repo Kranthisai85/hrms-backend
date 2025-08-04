@@ -3,10 +3,14 @@ const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
 const {
     getOneCompany,
+    testDomain,
     // getDepartment,
     // updateDepartment,
     // deleteDepartment
 } = require('../controllers/company_controller');
+
+// Test domain validation (public route)
+router.get('/test-domain', testDomain);
 
 // Apply authentication middleware to all routes
 router.use(protect);

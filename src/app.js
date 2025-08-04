@@ -19,6 +19,9 @@ const categoryRoutes = require('./routes/category');
 const companyRoutes = require('./routes/company');
 const reasonsRoutes = require('./routes/reasons');
 
+// Import middleware
+const domainAuth = require('./middleware/domainAuth');
+
 const app = express();
 
 // Middleware
@@ -86,6 +89,9 @@ const initializeModels = async (sequelize) => {
   console.log('Initializing Category model...');
   const Category = await require('./models/Category')(sequelize, DataTypes);
 
+  console.log('Initializing Company model...');
+  const Company = await require('./models/Company')(sequelize, DataTypes);
+
   console.log('Initializing Address model...');
   const Address = await require('./models/Address')(sequelize, DataTypes);
 
@@ -120,6 +126,7 @@ const initializeModels = async (sequelize) => {
     SubDepartment,
     Grade,
     Category,
+    Company,
     Address,
     FamilyMember,
     Qualification,
@@ -151,6 +158,9 @@ const startServer = async () => {
     console.log('Initializing models...');
     const models = await initializeModels(sequelize);
     console.log('Models initialized successfully.');
+
+    // Apply domain validation middleware to all API routes
+    app.use('/api', domainAuth);
 
     // Routes
     app.use('/api/auth', authRoutes);

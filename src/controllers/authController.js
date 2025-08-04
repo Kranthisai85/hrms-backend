@@ -7,16 +7,33 @@ const bcrypt = require('bcryptjs');
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    // Remove excessive logging
+    const host = req.get('host'); // Get the domain from request
 
-    // Get User model from global db
-    const User = global.db.User;
-    if (!User) {
+    // Get User and Company models from global db
+    const { User, Company } = global.db;
+    if (!User || !Company) {
       return res.status(500).json({ success: false, message: 'Database initialization error' });
     }
 
+    // First validate domain
+    const company = await Company.findOne({
+      where: { domainName: host }
+    });
+
+    if (!company) {
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid domain or company not found',
+        domain: host
+      });
+    }
+
+    // Find user with company validation
     const user = await User.findOne({
-      where: { email },
+      where: { 
+        email: email,
+        companyId: company.id // Ensure user belongs to this company
+      },
       raw: true
     });
 
@@ -52,7 +69,8 @@ exports.login = async (req, res) => {
       {
         id: user.id,
         role: user.role,
-        companyId: user.companyId
+        companyId: user.companyId,
+        domain: host // Include domain in token for additional validation
       },
       process.env.JWT_SECRET || 'your-super-secret-jwt-key-for-pacehrm',
     );
@@ -60,7 +78,12 @@ exports.login = async (req, res) => {
     res.json({
       success: true,
       token,
-      user
+      user,
+      company: {
+        id: company.id,
+        name: company.name,
+        domain: company.domainName
+      }
     });
   } catch (error) {
     res.status(500).json({

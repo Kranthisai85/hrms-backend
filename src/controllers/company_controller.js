@@ -27,3 +27,43 @@ exports.getOneCompany = async (req, res) => {
         res.status(500).json({ success: false, message: error.message || 'Error retrieving company' });
     }
 };
+
+// @desc    Test domain validation
+// @route   GET /api/companies/test-domain
+// @access  Public
+exports.testDomain = async (req, res) => {
+  try {
+    const host = req.get('host');
+    const { Company } = global.db;
+    
+    if (!Company) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Database models not initialized' 
+      });
+    }
+
+    const company = await Company.findOne({
+      where: { domainName: host }
+    });
+
+    res.json({
+      success: true,
+      message: 'Domain validation test',
+      data: {
+        host: host,
+        companyFound: !!company,
+        company: company ? {
+          id: company.id,
+          name: company.name,
+          domain: company.domainName
+        } : null
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error testing domain validation'
+    });
+  }
+};

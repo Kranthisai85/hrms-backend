@@ -32,6 +32,7 @@ exports.createEmployee = async (req, res) => {
       bloodGroup, // Direct field from frontend
       aadharNumber,
       panNumber,
+      ctc, // Added CTC field
       // Handle nested user data from frontend
       user
     } = req.body;
@@ -89,6 +90,7 @@ exports.createEmployee = async (req, res) => {
           employmentType: employmentType,
           panNumber: panNumber,
           aadharNumber: aadharNumber,
+          ctc: ctc || null, // Added CTC field
           email: officialEmail,
           invite_sent: inviteSent,
           confirmationDate: confirmationDate || null,
@@ -230,6 +232,15 @@ exports.getEmployee = async (req, res) => {
             attributes: ['id', 'name', 'lastName']
           }]
         },
+      ],
+      attributes: [
+        'id', 'userId', 'empCode', 'departmentId', 'designationId', 'branchId', 
+        'subDepartmentId', 'gradeId', 'categoryId', 'reportingManagerId', 
+        'joiningDate', 'employmentStatus', 'employmentType', 'workSchedule', 
+        'basicSalary', 'bankName', 'accountNumber', 'ifscCode', 'panNumber', 
+        'aadharNumber', 'email', 'inviteSent', 'confirmationDate', 
+        'resignationDate', 'relievedDate', 'reason', 'photo', 'ctc',
+        'createdAt', 'updatedAt'
       ]
     });
 
@@ -357,7 +368,7 @@ exports.updateEmployee = async (req, res) => {
         'empCode', 'departmentId', 'designationId', 'branchId', 'subDepartmentId',
         'gradeId', 'categoryId', 'reportingManagerId', 'employmentType', 'employmentStatus',
         'joiningDate', 'confirmationDate', 'resignationDate', 'relievedDate', 'reason',
-        'panNumber', 'aadharNumber', 'email', 'invite_sent', 'inviteSent',
+        'panNumber', 'aadharNumber', 'ctc', 'email', 'invite_sent', 'inviteSent',
         // Additional fields
         'phoneNumber', 'address', 'city', 'state', 'country', 'pinCode',
         'workSchedule', 'basicSalary', 'bankName', 'accountNumber', 'ifscCode',

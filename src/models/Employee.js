@@ -146,6 +146,11 @@ module.exports = async (sequelize) => {
                 allowNull: true,
                 field: 'photo',
             },
+            ctc: {
+                type: DataTypes.DECIMAL(15, 2),
+                allowNull: true,
+                field: 'ctc',
+            },
         },
         {
             timestamps: true,
