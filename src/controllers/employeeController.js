@@ -11,17 +11,17 @@ exports.createEmployee = async (req, res) => {
       name, // Map 'name' to 'firstName' for User model
       gender,
       dateOfBirth,
-      branch: branchId,
-      designation: designationId,
-      department: departmentId,
-      subDepartment: subDepartmentId,
-      grade: gradeId,
-      category: categoryId,
-      reportingManager: reportingManagerId,
-      employeeType: employmentType,
+      branchId,
+      designationId,
+      departmentId,
+      subDepartmentId,
+      gradeId,
+      categoryId,
+      reportingManagerId,
+      employmentType,
       employmentStatus,
-      dateOfJoin: joiningDate,
-      mobileNumber: phone, // Map to 'phone' for User model
+      joiningDate,
+      phone, // Map to 'phone' for User model
       personalEmail, // Not stored, using officialEmail as email
       officialEmail,
       inviteSent,
@@ -30,8 +30,8 @@ exports.createEmployee = async (req, res) => {
       relievedDate,
       reason,
       bloodGroup,
-      aadhaarNo: aadharNumber,
-      pan: panNumber,
+      aadharNumber,
+      panNumber,
     } = req.body;
 
     const { User, Employee, sequelize } = global.db;
@@ -40,8 +40,9 @@ exports.createEmployee = async (req, res) => {
     }
 
     const companyId = req.user.companyId;
+
     if (!officialEmail || !branchId || !designationId || !departmentId || !joiningDate || !employmentType || !panNumber || !aadharNumber || !companyId) {
-      return res.status(400).json({ success: false, message: 'Missing required fields: email, branchId, designationId, departmentId, joiningDate, employmentType, panNumber, aadharNumber, or companyId' });
+      return res.status(400).json({ success: false, message: 'Missing required fields: officialEmail, branchId, designationId, departmentId, joiningDate, employmentType, panNumber, aadharNumber, or companyId' });
     }
 
     const result = await sequelize.transaction(async (t) => {
@@ -66,7 +67,7 @@ exports.createEmployee = async (req, res) => {
       const employee = await Employee.create(
         {
           userId: user.id,
-          employeeId: employeeId,
+          empCode: employeeId,
           departmentId: departmentId,
           designationId: designationId,
           branchId: branchId,
@@ -213,7 +214,7 @@ exports.getEmployee = async (req, res) => {
         {
           model: Employee,
           as: 'reportingManager',
-          attributes: ['id', 'employeeId', 'email'],
+          attributes: ['id', 'empCode', 'email'],
           include: [{
             model: User,
             as: 'user',
@@ -242,7 +243,7 @@ exports.getEmployee = async (req, res) => {
     let familyMembers = [];
     if (FamilyMember) {
       familyMembers = await FamilyMember.findAll({
-        where: { employee_id: employee.userId }
+        where: { user_id: employee.userId }
       });
     }
 
@@ -250,7 +251,7 @@ exports.getEmployee = async (req, res) => {
     let qualifications = [];
     if (Qualification) {
       qualifications = await Qualification.findAll({
-        where: { employee_id: employee.userId }
+        where: { user_id: employee.userId }
       });
     }
 
@@ -258,7 +259,7 @@ exports.getEmployee = async (req, res) => {
     let experiences = [];
     if (Experience) {
       experiences = await Experience.findAll({
-        where: { employee_id: employee.userId }
+        where: { user_id: employee.userId }
       });
     }
 
@@ -266,7 +267,7 @@ exports.getEmployee = async (req, res) => {
     let documents = [];
     if (Document) {
       documents = await Document.findAll({
-        where: { employee_id: employee.userId }
+        where: { user_id: employee.userId }
       });
     }
 
@@ -366,33 +367,33 @@ exports.updateEmployee = async (req, res) => {
 
       // --- Family Members Section ---
       if (Array.isArray(req.body.familyMembers) && FamilyMember) {
-        await FamilyMember.destroy({ where: { employee_id: employee.id }, transaction: t });
+        await FamilyMember.destroy({ where: { user_id: employee.id }, transaction: t });
         for (const member of req.body.familyMembers) {
-          await FamilyMember.create({ employee_id: employee.id, ...member }, { transaction: t });
+          await FamilyMember.create({ user_id: employee.id, ...member }, { transaction: t });
         }
       }
 
       // --- Qualifications Section ---
       if (Array.isArray(req.body.qualifications) && Qualification) {
-        await Qualification.destroy({ where: { employee_id: employee.id }, transaction: t });
+        await Qualification.destroy({ where: { user_id: employee.id }, transaction: t });
         for (const qual of req.body.qualifications) {
-          await Qualification.create({ employee_id: employee.id, ...qual }, { transaction: t });
+          await Qualification.create({ user_id: employee.id, ...qual }, { transaction: t });
         }
       }
 
       // --- Experiences Section ---
       if (Array.isArray(req.body.experiences) && Experience) {
-        await Experience.destroy({ where: { employee_id: employee.id }, transaction: t });
+        await Experience.destroy({ where: { user_id: employee.id }, transaction: t });
         for (const exp of req.body.experiences) {
-          await Experience.create({ employee_id: employee.id, ...exp }, { transaction: t });
+          await Experience.create({ user_id: employee.id, ...exp }, { transaction: t });
         }
       }
 
       // --- Documents Section ---
       if (Array.isArray(req.body.documents) && Document) {
-        await Document.destroy({ where: { employee_id: employee.id }, transaction: t });
+        await Document.destroy({ where: { user_id: employee.id }, transaction: t });
         for (const doc of req.body.documents) {
-          await Document.create({ employee_id: employee.id, ...doc }, { transaction: t });
+          await Document.create({ user_id: employee.id, ...doc }, { transaction: t });
         }
       }
 
@@ -500,12 +501,12 @@ exports.importEmployees = async (req, res) => {
         }, { transaction: t });
 
         // Generate employee ID
-        const employeeId = `EMP${String(user.id).padStart(5, '0')}`;
+        const empCode = `EMP${String(user.id).padStart(5, '0')}`;
 
         // Create employee with user association
         const employee = await Employee.create({
           userId: user.id,
-          employeeId,
+          empCode,
           ...row,
           status: 'Active'
         }, { transaction: t });
@@ -562,7 +563,7 @@ exports.exportEmployees = async (req, res) => {
 
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(employees.map(emp => ({
-      'Employee ID': emp.employeeId,
+      'Employee ID': emp.empCode,
       'First Name': emp.firstName,
       'Last Name': emp.lastName,
       'Email': emp.email,

@@ -14,11 +14,11 @@ module.exports = async (sequelize) => {
                 allowNull: false,
                 field: 'user_id',
             },
-            employeeId: {
+            empCode: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 unique: true,
-                field: 'employee_id',
+                field: 'emp_code',
             },
             departmentId: {
                 type: DataTypes.INTEGER,
