@@ -16,13 +16,17 @@ exports.protect = async (req, res, next) => {
       const secret = process.env.JWT_SECRET || 'your-super-secret-jwt-key-for-pacehrm';
       const decoded = jwt.verify(token, secret);
       
-      // Additional domain validation for JWT tokens
+      // Additional domain validation for JWT tokens (skip for development)
       const currentFrontendHost = req.headers['x-frontend-host'] || req.headers['origin']?.replace(/^https?:\/\//, '') || req.get('host');
-      if (decoded.domain && decoded.domain !== currentFrontendHost) {
-        return res.status(403).json({
-          success: false,
-          message: 'Token is not valid for this domain'
-        });
+      
+      // Skip domain validation for development environment
+      if (!currentFrontendHost.includes('localhost') && !currentFrontendHost.includes('127.0.0.1')) {
+        if (decoded.domain && decoded.domain !== currentFrontendHost) {
+          return res.status(403).json({
+            success: false,
+            message: 'Token is not valid for this domain'
+          });
+        }
       }
       
       req.user = decoded;

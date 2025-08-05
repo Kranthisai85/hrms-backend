@@ -18,26 +18,41 @@ exports.login = async (req, res) => {
     if (!User || !Company) {
       return res.status(500).json({ success: false, message: 'Database initialization error' });
     }
-
-    // First validate domain
-    const company = await Company.findOne({
-      where: { domainName: frontendHost }
-    });
-
-    if (!company) {
-      return res.status(403).json({
-        success: false,
-        message: 'Invalid domain or company not found',
-        domain: host
+    let company;
+    // Skip domain validation for development environment
+    if (frontendHost.includes('localhost') || frontendHost.includes('127.0.0.1')) {
+      console.log('Development environment detected, skipping domain validation');
+      
+      // For development, find any company or create a default one
+      company = await Company.findOne();
+      if (!company) {
+        console.log('No company found in development, proceeding without company validation');
+        // Continue without company validation for development
+      }
+    } else {
+      // Production: validate domain
+      company = await Company.findOne({
+        where: { domainName: frontendHost }
       });
+
+      if (!company) {
+        return res.status(403).json({
+          success: false,
+          message: 'Invalid domain or company not found',
+          domain: frontendHost
+        });
+      }
     }
 
     // Find user with company validation
+    let userQuery = { email: email };
+    // Add company validation only if company exists (production) or if we have a company in development
+    if (company && company.id) {
+      userQuery.companyId = company.id;
+    }
+    
     const user = await User.findOne({
-      where: { 
-        email: email,
-        companyId: company.id // Ensure user belongs to this company
-      },
+      where: userQuery,
       raw: true
     });
 
@@ -79,16 +94,23 @@ exports.login = async (req, res) => {
       process.env.JWT_SECRET || 'your-super-secret-jwt-key-for-pacehrm',
     );
 
-    res.json({
+    // Prepare response with company info if available
+    const responseData = {
       success: true,
       token,
-      user,
-      company: {
+      user
+    };
+
+    // Add company info to response if company exists
+    if (company) {
+      responseData.company = {
         id: company.id,
         name: company.name,
         domain: company.domainName
-      }
-    });
+      };
+    }
+
+    res.json(responseData);
   } catch (error) {
     res.status(500).json({
       success: false,

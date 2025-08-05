@@ -101,6 +101,28 @@ exports.createEmployee = async (req, res) => {
         { transaction: t }
       );
 
+      // Create address record if address data is provided
+      const { Address } = global.db;
+      if (Address) {
+        const addressFields = [
+          'address', 'city', 'state', 'country', 'pincode',
+          'permanentAddress', 'permanentCity', 'permanentState', 'permanentCountry', 'permanentPincode'
+        ];
+        const addressData = {};
+        addressFields.forEach(field => {
+          if (req.body[field]) {
+            addressData[field] = req.body[field];
+          }
+        });
+        
+        if (Object.keys(addressData).length > 0) {
+          await Address.create({
+            user_id: userRecord.id,
+            ...addressData
+          }, { transaction: t });
+        }
+      }
+
       const employeeWithUser = await Employee.findOne({
         where: { id: employee.id },
         include: [
@@ -122,6 +144,8 @@ exports.createEmployee = async (req, res) => {
       data: result,
     });
   } catch (error) {
+    console.log("error");
+    console.log(error.message);
     res.status(500).json({
       success: false,
       message: error.message || 'Error creating employee',
@@ -233,15 +257,6 @@ exports.getEmployee = async (req, res) => {
           }]
         },
       ],
-      attributes: [
-        'id', 'userId', 'empCode', 'departmentId', 'designationId', 'branchId', 
-        'subDepartmentId', 'gradeId', 'categoryId', 'reportingManagerId', 
-        'joiningDate', 'employmentStatus', 'employmentType', 'workSchedule', 
-        'basicSalary', 'bankName', 'accountNumber', 'ifscCode', 'panNumber', 
-        'aadharNumber', 'email', 'inviteSent', 'confirmationDate', 
-        'resignationDate', 'relievedDate', 'reason', 'photo', 'ctc',
-        'createdAt', 'updatedAt'
-      ]
     });
 
     if (!employee) {
@@ -362,18 +377,17 @@ exports.updateEmployee = async (req, res) => {
         await employee.user.update(userUpdateData, { transaction: t });
       }
 
-      // Update employee details
+      // Update employee details (excluding address fields which are handled separately)
       const updateData = {};
       const employeeFields = [
         'empCode', 'departmentId', 'designationId', 'branchId', 'subDepartmentId',
         'gradeId', 'categoryId', 'reportingManagerId', 'employmentType', 'employmentStatus',
         'joiningDate', 'confirmationDate', 'resignationDate', 'relievedDate', 'reason',
         'panNumber', 'aadharNumber', 'ctc', 'email', 'invite_sent', 'inviteSent',
-        // Additional fields
-        'phoneNumber', 'address', 'city', 'state', 'country', 'pinCode',
-        'workSchedule', 'basicSalary', 'bankName', 'accountNumber', 'ifscCode',
+        // Additional fields (excluding address fields)
+        'phoneNumber', 'workSchedule', 'basicSalary', 'bankName', 'accountNumber', 'ifscCode',
         'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation',
-        'isOrphan', 'lessThanPrimary', 'isFresher', 'photo',
+        'isOrphan', 'lessThanPrimary', 'isFresher', 'photo',"bankBranch"
       ];
       
       employeeFields.forEach(field => {
@@ -381,7 +395,8 @@ exports.updateEmployee = async (req, res) => {
           updateData[field] = req.body[field];
         }
       });
-      
+      console.log("updateData");
+      console.log(updateData);
       await employee.update(updateData, { transaction: t });
 
       // --- Address Section ---
@@ -390,7 +405,12 @@ exports.updateEmployee = async (req, res) => {
         'permanentAddress', 'permanentCity', 'permanentState', 'permanentCountry', 'permanentPincode'
       ];
       const addressUpdate = {};
-      addressFields.forEach(f => { if (req.body[f] !== undefined) addressUpdate[f] = req.body[f]; });
+      addressFields.forEach(f => { 
+        if (req.body[f] !== undefined) {
+          addressUpdate[f] = req.body[f];
+        }
+      });
+      
       if (Object.keys(addressUpdate).length && Address) {
         const [address, created] = await Address.findOrCreate({
           where: { user_id: employee.userId },
@@ -406,33 +426,33 @@ exports.updateEmployee = async (req, res) => {
 
       // --- Family Members Section ---
       if (Array.isArray(req.body.familyMembers) && FamilyMember) {
-        await FamilyMember.destroy({ where: { user_id: employee.id }, transaction: t });
+        await FamilyMember.destroy({ where: { user_id: employee.userId }, transaction: t });
         for (const member of req.body.familyMembers) {
-          await FamilyMember.create({ user_id: employee.id, ...member }, { transaction: t });
+          await FamilyMember.create({ user_id: employee.userId, employee_id: employee.id, ...member }, { transaction: t });
         }
       }
 
       // --- Qualifications Section ---
       if (Array.isArray(req.body.qualifications) && Qualification) {
-        await Qualification.destroy({ where: { user_id: employee.id }, transaction: t });
+        await Qualification.destroy({ where: { user_id: employee.userId }, transaction: t });
         for (const qual of req.body.qualifications) {
-          await Qualification.create({ user_id: employee.id, ...qual }, { transaction: t });
+          await Qualification.create({ user_id: employee.userId, employee_id: employee.id, ...qual }, { transaction: t });
         }
       }
 
       // --- Experiences Section ---
       if (Array.isArray(req.body.experiences) && Experience) {
-        await Experience.destroy({ where: { user_id: employee.id }, transaction: t });
+        await Experience.destroy({ where: { user_id: employee.userId }, transaction: t });
         for (const exp of req.body.experiences) {
-          await Experience.create({ user_id: employee.id, ...exp }, { transaction: t });
+          await Experience.create({ user_id: employee.userId, employee_id: employee.id, ...exp }, { transaction: t });
         }
       }
 
       // --- Documents Section ---
       if (Array.isArray(req.body.documents) && Document) {
-        await Document.destroy({ where: { user_id: employee.id }, transaction: t });
+        await Document.destroy({ where: { user_id: employee.userId }, transaction: t });
         for (const doc of req.body.documents) {
-          await Document.create({ user_id: employee.id, ...doc }, { transaction: t });
+          await Document.create({ user_id: employee.userId, employee_id: employee.id, ...doc }, { transaction: t });
         }
       }
 

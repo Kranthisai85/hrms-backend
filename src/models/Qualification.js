@@ -4,9 +4,11 @@ module.exports = (sequelize, DataTypes) => {
       id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
       employee_id: { type: DataTypes.INTEGER, allowNull: false },
       user_id: { type: DataTypes.INTEGER, allowNull: false },
-      qualification: DataTypes.STRING,
+      degree: DataTypes.STRING,
       yearOfPassing: DataTypes.INTEGER,
       institution: DataTypes.STRING,
+      percentage: DataTypes.BIGINT,
+      specialization: DataTypes.STRING,
     }, {
       tableName: 'qualifications',
       timestamps: true,

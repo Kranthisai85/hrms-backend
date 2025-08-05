@@ -44,9 +44,19 @@ exports.testDomain = async (req, res) => {
       });
     }
 
-    const company = await Company.findOne({
-      where: { domainName: frontendHost }
-    });
+    let company = null;
+    
+    // Handle development environment
+    if (frontendHost.includes('localhost') || frontendHost.includes('127.0.0.1')) {
+      console.log('Development environment detected in testDomain');
+      // For development, find any company or return null
+      company = await Company.findOne();
+    } else {
+      // Production: find company by domain
+      company = await Company.findOne({
+        where: { domainName: frontendHost }
+      });
+    }
 
     res.json({
       success: true,

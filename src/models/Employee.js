@@ -151,6 +151,41 @@ module.exports = async (sequelize) => {
                 allowNull: true,
                 field: 'ctc',
             },
+            emergencyContactName: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                field: 'emergency_contact_name',
+            },
+            emergencyContactPhone: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                field: 'emergency_contact_phone',
+            },
+            emergencyContactRelation: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                field: 'emergency_contact_relation',
+            },
+            isOrphan: {
+                type: DataTypes.BOOLEAN,
+                allowNull: true,
+                field: 'is_orphan',
+            },
+            lessThanPrimary: {
+                type: DataTypes.BOOLEAN,
+                allowNull: true,
+                field: 'less_than_primary',
+            },
+            isFresher: {
+                type: DataTypes.BOOLEAN,
+                allowNull: true,
+                field: 'is_fresher',
+            },
+            bankBranch: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                field: 'bank_branch',
+            },
         },
         {
             timestamps: true,
