@@ -7,7 +7,11 @@ const bcrypt = require('bcryptjs');
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const host = req.get('host'); // Get the domain from request
+    // Get frontend host from headers (sent by frontend)
+    const frontendHost = req.headers['x-frontend-host'] || req.headers['origin']?.replace(/^https?:\/\//, '') || req.get('host');
+
+    console.log('Login - Frontend host:', frontendHost);
+    console.log('Login - Backend host:', req.get('host'));
 
     // Get User and Company models from global db
     const { User, Company } = global.db;
@@ -17,7 +21,7 @@ exports.login = async (req, res) => {
 
     // First validate domain
     const company = await Company.findOne({
-      where: { domainName: host }
+      where: { domainName: frontendHost }
     });
 
     if (!company) {
@@ -70,7 +74,7 @@ exports.login = async (req, res) => {
         id: user.id,
         role: user.role,
         companyId: user.companyId,
-        domain: host // Include domain in token for additional validation
+        domain: frontendHost // Include frontend domain in token for additional validation
       },
       process.env.JWT_SECRET || 'your-super-secret-jwt-key-for-pacehrm',
     );

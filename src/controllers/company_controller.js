@@ -33,7 +33,8 @@ exports.getOneCompany = async (req, res) => {
 // @access  Public
 exports.testDomain = async (req, res) => {
   try {
-    const host = req.get('host');
+    // Get frontend host from headers (sent by frontend)
+    const frontendHost = req.headers['x-frontend-host'] || req.headers['origin']?.replace(/^https?:\/\//, '') || req.get('host');
     const { Company } = global.db;
     
     if (!Company) {
@@ -44,14 +45,15 @@ exports.testDomain = async (req, res) => {
     }
 
     const company = await Company.findOne({
-      where: { domainName: host }
+      where: { domainName: frontendHost }
     });
 
     res.json({
       success: true,
       message: 'Domain validation test',
       data: {
-        host: host,
+        frontendHost: frontendHost,
+        backendHost: req.get('host'),
         companyFound: !!company,
         company: company ? {
           id: company.id,

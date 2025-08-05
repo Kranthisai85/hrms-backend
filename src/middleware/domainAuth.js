@@ -1,6 +1,10 @@
 const domainAuth = async (req, res, next) => {
   try {
-    const host = req.get('host'); // Gets the domain from request (e.g., "pss.pacehrm.com")
+    // Get frontend host from headers (sent by frontend)
+    const frontendHost = req.headers['x-frontend-host'] || req.headers['origin']?.replace(/^https?:\/\//, '') || req.get('host');
+    
+    console.log('Frontend host:', frontendHost);
+    console.log('Backend host:', req.get('host'));
     
     // Skip domain validation for health check and certain public endpoints
     if (req.path === '/health' || req.path === '/auth/login') {
@@ -8,7 +12,7 @@ const domainAuth = async (req, res, next) => {
     }
 
     // Handle localhost and development environments
-    if (host.includes('localhost') || host.includes('127.0.0.1')) {
+    if (frontendHost.includes('localhost') || frontendHost.includes('127.0.0.1')) {
       console.log('Development environment detected, skipping domain validation');
       return next();
     }
@@ -21,21 +25,21 @@ const domainAuth = async (req, res, next) => {
       });
     }
 
-    // Find company by domain
+    // Find company by frontend domain
     const company = await Company.findOne({
-      where: { domainName: host }
+      where: { domainName: frontendHost }
     });
 
     if (!company) {
-      console.log(`Domain validation failed for host: ${host}`);
+      console.log(`Domain validation failed for frontend host: ${frontendHost}`);
       return res.status(403).json({
         success: false,
         message: 'Invalid domain or company not found',
-        domain: host
+        domain: frontendHost
       });
     }
 
-    console.log(`Domain validation successful for company: ${company.name} (${host})`);
+    console.log(`Domain validation successful for company: ${company.name} (${frontendHost})`);
     
     // Attach company to request for later use
     req.company = company;

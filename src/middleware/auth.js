@@ -17,8 +17,8 @@ exports.protect = async (req, res, next) => {
       const decoded = jwt.verify(token, secret);
       
       // Additional domain validation for JWT tokens
-      const currentHost = req.get('host');
-      if (decoded.domain && decoded.domain !== currentHost) {
+      const currentFrontendHost = req.headers['x-frontend-host'] || req.headers['origin']?.replace(/^https?:\/\//, '') || req.get('host');
+      if (decoded.domain && decoded.domain !== currentFrontendHost) {
         return res.status(403).json({
           success: false,
           message: 'Token is not valid for this domain'
