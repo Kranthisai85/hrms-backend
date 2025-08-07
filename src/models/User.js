@@ -50,6 +50,7 @@ module.exports = async (sequelize) => {
       phone: {
         type: DataTypes.STRING,
         allowNull: true,
+        unique: true,
       },
       bloodGroup: {
         type: DataTypes.ENUM('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'),

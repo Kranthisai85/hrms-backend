@@ -1,5 +1,139 @@
 const bcrypt = require('bcryptjs');
 const XLSX = require('xlsx');
+const { Op } = require('sequelize');
+
+// Helper function to check unique constraints
+const checkUniqueConstraints = async (User, Employee, data, excludeId = null) => {
+  const errors = {};
+  
+  // Check email uniqueness in User table
+  if (data.email) {
+    const userWhere = { email: data.email };
+    if (excludeId) {
+      userWhere.id = { [Op.ne]: excludeId };
+    }
+    const existingUser = await User.findOne({ 
+      where: userWhere,
+      include: [{
+        model: Employee,
+        as: 'employee',
+        attributes: ['empCode']
+      }]
+    });
+    if (existingUser) {
+      const empCode = existingUser.employee?.empCode || 'N/A';
+      const userName = existingUser.name || 'Unknown';
+      errors.email = `Email already exists to ${empCode} - ${userName}`;
+    }
+  }
+  
+  // Check phone uniqueness in User table
+  if (data.phone) {
+    const userWhere = { phone: data.phone };
+    if (excludeId) {
+      userWhere.id = { [Op.ne]: excludeId };
+    }
+    const existingUser = await User.findOne({ 
+      where: userWhere,
+      include: [{
+        model: Employee,
+        as: 'employee',
+        attributes: ['empCode']
+      }]
+    });
+    if (existingUser) {
+      const empCode = existingUser.employee?.empCode || 'N/A';
+      const userName = existingUser.name || 'Unknown';
+      errors.phone = `Phone number already exists to ${empCode} - ${userName}`;
+    }
+  }
+  
+  // Check empCode uniqueness in Employee table
+  if (data.empCode) {
+    const empWhere = { empCode: data.empCode };
+    if (excludeId) {
+      empWhere.id = { [Op.ne]: excludeId };
+    }
+    const existingEmployee = await Employee.findOne({ 
+      where: empWhere,
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['name']
+      }]
+    });
+    if (existingEmployee) {
+      const empCode = existingEmployee.empCode;
+      const userName = existingEmployee.user?.name || 'Unknown';
+      errors.empCode = `Employee code already exists to ${empCode} - ${userName}`;
+    }
+  }
+  
+  // Check official email uniqueness in Employee table
+  if (data.officialEmail) {
+    const empWhere = { email: data.officialEmail };
+    if (excludeId) {
+      empWhere.id = { [Op.ne]: excludeId };
+    }
+    const existingEmployee = await Employee.findOne({ 
+      where: empWhere,
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['name']
+      }]
+    });
+    if (existingEmployee) {
+      const empCode = existingEmployee.empCode;
+      const userName = existingEmployee.user?.name || 'Unknown';
+      errors.officialEmail = `Official email already exists to ${empCode} - ${userName}`;
+    }
+  }
+  
+  // Check PAN number uniqueness in Employee table
+  if (data.panNumber) {
+    const empWhere = { panNumber: data.panNumber };
+    if (excludeId) {
+      empWhere.id = { [Op.ne]: excludeId };
+    }
+    const existingEmployee = await Employee.findOne({ 
+      where: empWhere,
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['name']
+      }]
+    });
+    if (existingEmployee) {
+      const empCode = existingEmployee.empCode;
+      const userName = existingEmployee.user?.name || 'Unknown';
+      errors.panNumber = `PAN number already exists to ${empCode} - ${userName}`;
+    }
+  }
+  
+  // Check Aadhaar number uniqueness in Employee table
+  if (data.aadharNumber) {
+    const empWhere = { aadharNumber: data.aadharNumber };
+    if (excludeId) {
+      empWhere.id = { [Op.ne]: excludeId };
+    }
+    const existingEmployee = await Employee.findOne({ 
+      where: empWhere,
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['name']
+      }]
+    });
+    if (existingEmployee) {
+      const empCode = existingEmployee.empCode;
+      const userName = existingEmployee.user?.name || 'Unknown';
+      errors.aadharNumber = `Aadhaar number already exists to ${empCode} - ${userName}`;
+    }
+  }
+  
+  return errors;
+};
 
 // @desc    Create new employee
 // @route   POST /api/employees
@@ -55,6 +189,28 @@ exports.createEmployee = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing required fields: officialEmail, branchId, designationId, departmentId, joiningDate, employmentType, panNumber, aadharNumber, or companyId' });
     }
 
+    console.log("personalEmail");
+    console.log(personalEmail);
+
+    // Check unique constraints before creating
+    const uniqueErrors = await checkUniqueConstraints(User, Employee, {
+      email: personalEmail,
+      phone: userPhone,
+      empCode: empCode,
+      officialEmail: officialEmail,
+      panNumber: panNumber,
+      aadharNumber: aadharNumber
+    });
+    console.log("uniqueErrors");
+    console.log(uniqueErrors);
+    if (Object.keys(uniqueErrors).length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Validation failed',
+        errors: uniqueErrors
+      });
+    }
+    
     const result = await sequelize.transaction(async (t) => {
       const userRecord = await User.create(
         {
@@ -72,7 +228,8 @@ exports.createEmployee = async (req, res) => {
         },
         { transaction: t }
       );
-
+      console.log("userRecord");
+      console.log(userRecord);
       const employeeId = empCode || `EMP${String(userRecord.id).padStart(5, '0')}`;
       const employee = await Employee.create(
         {
@@ -353,6 +510,23 @@ exports.updateEmployee = async (req, res) => {
         throw new Error('Employee not found');
       }
 
+      // Check unique constraints before updating
+      const uniqueErrors = await checkUniqueConstraints(User, Employee, {
+        email: req.body.personalEmail || req.body.user?.email || req.body.email,
+        phone: req.body.user?.phone || req.body.phone,
+        empCode: req.body.empCode,
+        officialEmail: req.body.officialEmail,
+        panNumber: req.body.panNumber,
+        aadharNumber: req.body.aadharNumber
+      }, employee.id);
+
+      if (Object.keys(uniqueErrors).length > 0) {
+        throw new Error(JSON.stringify({
+          message: 'Validation failed',
+          errors: uniqueErrors
+        }));
+      }
+
       // Update user details if provided
       const userUpdateData = {};
       const userFields = ['name', 'phone', 'dateOfBirth', 'gender', 'bloodGroup'];
@@ -373,6 +547,11 @@ exports.updateEmployee = async (req, res) => {
         });
       }
       
+      // Handle personal email specifically - this goes to User table's email field
+      if (req.body.personalEmail !== undefined) {
+        userUpdateData.email = req.body.personalEmail;
+      }
+      
       if (Object.keys(userUpdateData).length > 0) {
         await employee.user.update(userUpdateData, { transaction: t });
       }
@@ -383,7 +562,7 @@ exports.updateEmployee = async (req, res) => {
         'empCode', 'departmentId', 'designationId', 'branchId', 'subDepartmentId',
         'gradeId', 'categoryId', 'reportingManagerId', 'employmentType', 'employmentStatus',
         'joiningDate', 'confirmationDate', 'resignationDate', 'relievedDate', 'reason',
-        'panNumber', 'aadharNumber', 'ctc', 'email', 'invite_sent', 'inviteSent',
+        'panNumber', 'aadharNumber', 'ctc', 'invite_sent', 'inviteSent',
         // Additional fields (excluding address fields)
         'phoneNumber', 'workSchedule', 'basicSalary', 'bankName', 'accountNumber', 'ifscCode',
         'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation',
@@ -395,6 +574,12 @@ exports.updateEmployee = async (req, res) => {
           updateData[field] = req.body[field];
         }
       });
+      
+      // Handle official email specifically - this goes to Employee table's email field
+      if (req.body.officialEmail !== undefined) {
+        updateData.email = req.body.officialEmail;
+      }
+      
       console.log("updateData");
       console.log(updateData);
       await employee.update(updateData, { transaction: t });
@@ -473,6 +658,25 @@ exports.updateEmployee = async (req, res) => {
     });
   } catch (error) {
     console.error('Update employee error:', error);
+    
+    // Handle unique constraint validation errors
+    if (error.message.includes('Validation failed')) {
+      try {
+        const errorData = JSON.parse(error.message);
+        return res.status(400).json({
+          success: false,
+          message: errorData.message,
+          errors: errorData.errors
+        });
+      } catch (parseError) {
+        // If JSON parsing fails, return generic error
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed'
+        });
+      }
+    }
+    
     res.status(500).json({
       success: false,
       message: error.message === 'Employee not found' ? error.message : 'Error updating employee'

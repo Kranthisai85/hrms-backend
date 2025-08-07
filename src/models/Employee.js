@@ -101,11 +101,13 @@ module.exports = async (sequelize) => {
             panNumber: {
                 type: DataTypes.STRING,
                 allowNull: false,
+                unique: true,
                 field: 'pan_number',
             },
             aadharNumber: {
                 type: DataTypes.STRING,
                 allowNull: false,
+                unique: true,
                 field: 'aadhar_number',
             },
             email: {
