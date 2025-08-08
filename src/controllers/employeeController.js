@@ -33,12 +33,6 @@ const checkUniqueConstraints = async (User, Employee, data, excludeId = null, ex
     if (excludeId || excludeUserId) {
       userWhere.id = { [Op.ne]:  excludeUserId };
     }
-    console.log("userWhere");
-    console.log(userWhere);
-    console.log("excludeId");
-    console.log(excludeId);
-    console.log("excludeUserId");
-    console.log(excludeUserId);
     const existingUser = await User.findOne({ 
       where: userWhere,
       include: [{
@@ -198,7 +192,7 @@ exports.createEmployee = async (req, res) => {
 
     // Check unique constraints before creating
     const uniqueErrors = await checkUniqueConstraints(User, Employee, {
-      email: userEmail,
+      personalEmail: userEmail,
       phone: userPhone,
       empCode: empCode,
       officialEmail: officialEmail,
@@ -516,7 +510,7 @@ exports.updateEmployee = async (req, res) => {
 
       // Check unique constraints before updating
       const uniqueErrors = await checkUniqueConstraints(User, Employee, {
-        personalEmail: req.body.personalEmail,
+        personalEmail: req.body.personalEmail || req.body.email || req.body.user?.email,
         phone: req.body.phone || req.body.user?.phone,
         empCode: req.body.empCode,
         officialEmail: req.body.officialEmail,
@@ -554,6 +548,8 @@ exports.updateEmployee = async (req, res) => {
       // Handle personal email specifically - this goes to User table's email field
       if (req.body.personalEmail !== undefined) {
         userUpdateData.email = req.body.personalEmail;
+      } else if (req.body.email !== undefined) {
+        userUpdateData.email = req.body.email;
       }
       
       if (Object.keys(userUpdateData).length > 0) {
