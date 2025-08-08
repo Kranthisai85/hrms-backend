@@ -3,14 +3,14 @@ const XLSX = require('xlsx');
 const { Op } = require('sequelize');
 
 // Helper function to check unique constraints
-const checkUniqueConstraints = async (User, Employee, data, excludeId = null) => {
+const checkUniqueConstraints = async (User, Employee, data, excludeId = null, excludeUserId = null) => {
   const errors = {};
   
   // Check email uniqueness in User table
-  if (data.email) {
-    const userWhere = { email: data.email };
-    if (excludeId) {
-      userWhere.id = { [Op.ne]: excludeId };
+  if (data.personalEmail) {
+    const userWhere = { email: data.personalEmail };
+    if (excludeUserId) {
+      userWhere.id = { [Op.ne]:  excludeUserId };
     }
     const existingUser = await User.findOne({ 
       where: userWhere,
@@ -23,16 +23,22 @@ const checkUniqueConstraints = async (User, Employee, data, excludeId = null) =>
     if (existingUser) {
       const empCode = existingUser.employee?.empCode || 'N/A';
       const userName = existingUser.name || 'Unknown';
-      errors.email = `Email already exists to ${empCode} - ${userName}`;
+      errors.personalEmail = `Email already exists to ${empCode} - ${userName}`;
     }
   }
   
   // Check phone uniqueness in User table
   if (data.phone) {
     const userWhere = { phone: data.phone };
-    if (excludeId) {
-      userWhere.id = { [Op.ne]: excludeId };
+    if (excludeId || excludeUserId) {
+      userWhere.id = { [Op.ne]:  excludeUserId };
     }
+    console.log("userWhere");
+    console.log(userWhere);
+    console.log("excludeId");
+    console.log(excludeId);
+    console.log("excludeUserId");
+    console.log(excludeUserId);
     const existingUser = await User.findOne({ 
       where: userWhere,
       include: [{
@@ -184,17 +190,15 @@ exports.createEmployee = async (req, res) => {
     const userDateOfBirth = dateOfBirth || user?.date_of_birth || user?.dateOfBirth;
     const userPhone = phone || user?.phone;
     const userBloodGroup = bloodGroup || user?.blood_group;
+    const userEmail = personalEmail || user?.email;
 
     if (!officialEmail || !branchId || !designationId || !departmentId || !joiningDate || !employmentType || !panNumber || !aadharNumber || !companyId) {
       return res.status(400).json({ success: false, message: 'Missing required fields: officialEmail, branchId, designationId, departmentId, joiningDate, employmentType, panNumber, aadharNumber, or companyId' });
     }
 
-    console.log("personalEmail");
-    console.log(personalEmail);
-
     // Check unique constraints before creating
     const uniqueErrors = await checkUniqueConstraints(User, Employee, {
-      email: personalEmail,
+      email: userEmail,
       phone: userPhone,
       empCode: empCode,
       officialEmail: officialEmail,
@@ -216,7 +220,7 @@ exports.createEmployee = async (req, res) => {
         {
           name: userName,
           last_name: null,
-          email: personalEmail,
+          email: userEmail,
           password: null,
           role: 'employee',
           status: 'Active',
@@ -512,13 +516,13 @@ exports.updateEmployee = async (req, res) => {
 
       // Check unique constraints before updating
       const uniqueErrors = await checkUniqueConstraints(User, Employee, {
-        email: req.body.personalEmail || req.body.user?.email || req.body.email,
-        phone: req.body.user?.phone || req.body.phone,
+        personalEmail: req.body.personalEmail,
+        phone: req.body.phone || req.body.user?.phone,
         empCode: req.body.empCode,
         officialEmail: req.body.officialEmail,
         panNumber: req.body.panNumber,
         aadharNumber: req.body.aadharNumber
-      }, employee.id);
+      }, employee.id, employee.userId);
 
       if (Object.keys(uniqueErrors).length > 0) {
         throw new Error(JSON.stringify({
